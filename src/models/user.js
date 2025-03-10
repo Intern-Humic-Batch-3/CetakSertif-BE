@@ -31,9 +31,14 @@ const addUser = async (
   ]);
 };
 
+const searchByID = async (id) => {
+  const SQLQuery = "SELECT * FROM user WHERE id = ?";
+  return conn.execute(SQLQuery, [id]);
+};
+
 module.exports = {
   getAllUser,
   searchByEmail,
   addUser,
-
+  searchByID,
 };
