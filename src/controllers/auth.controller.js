@@ -2,13 +2,13 @@ const userModel = require("../models/user");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
-const addAdmin = async (req, res) => {
+const addUser = async (req, res) => {
   const { nama_depan, nama_belakang, email, password } = req.body;
-  const role = "admin";
+  const role = "user";
   const key = req.role;
 
   try {
-    if (key == "super admin") {
+    if (key == "admin") {
       const [found] = await userModel.searchByEmail(email);
       if (found.length > 0) {
         return res.status(400).json({
@@ -36,9 +36,9 @@ const addAdmin = async (req, res) => {
   }
 };
 
-const addSuperAdmin = async (req, res) => {
+const addAdmin = async (req, res) => {
   const { nama_depan, nama_belakang, email, password } = req.body;
-  const role = "super admin";
+  const role = "admin";
 
   try {
     const [found] = await userModel.searchByEmail(email);
@@ -102,8 +102,8 @@ const getUserLogin = async (req, res) => {
 };
 
 module.exports = {
+  addUser,
   addAdmin,
-  addSuperAdmin,
   login,
   getUserLogin,
 };
