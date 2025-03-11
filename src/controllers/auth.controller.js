@@ -95,7 +95,7 @@ const getUserLogin = async (req, res) => {
       return res.json({ message: "user found", data: response });
     }
     return res.status(404).json({ message: "User not found" });
-    res.status(200).json({ message: "User found", data: response });
+    // res.status(200).json({ message: "User found", data: response });
   } catch (error) {
     res.status(500).json({ message: error.message, data: null });
   }
