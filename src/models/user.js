@@ -36,9 +36,15 @@ const searchByID = async (id) => {
   return conn.execute(SQLQuery, [id]);
 };
 
+const deleteUser = async (id) => {
+  const SQLQuery = "DELETE FROM user WHERE id = ?";
+  return conn.execute(SQLQuery, [id]);
+};
+
 module.exports = {
   getAllUser,
   searchByEmail,
   addUser,
   searchByID,
+  deleteUser,
 };
