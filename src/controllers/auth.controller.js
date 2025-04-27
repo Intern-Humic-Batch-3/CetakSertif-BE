@@ -73,12 +73,19 @@ const login = async (req, res) => {
         );
         return res.status(200).json({
           massage: "Login succesful",
+          authentication: "true",
           token,
         });
+      } else {
+        return res.status(200).json({
+          message: "Wrong password",
+          authentication: "worongPassword",
+        })
       }
     } else {
-      return res.status(400).json({
+      return res.status(200).json({
         message: "Username or password is incorrect",
+        authentication: "false"
       });
     }
   } catch (error) {
