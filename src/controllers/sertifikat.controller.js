@@ -39,7 +39,10 @@ const addTemplate = async (req, res) => {
     const templatePath = await uploadTamplateIMG(templateIMG);
 
     await sertifikatModel.uploadTemplate(id, templatePath);
-    return res.json({ message: "Berhasil mengupload template", fileUrl: templatePath });
+    return res.json({
+      message: "Berhasil mengupload template",
+      fileUrl: templatePath,
+    });
   } catch (error) {
     return res
       .status(500)
@@ -100,8 +103,42 @@ const uploadTamplateIMG = async (TamplateIMG) => {
   }
 };
 
+const deleteTamplate = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [templateData] = await sertifikatModel.getTemplateByID(id);
+    const found = templateData[0];
+
+    if (!found) {
+      return res
+        .status(404)
+        .json({ message: "Data tamplate atau gambar tidak ditemukan." });
+    }
+
+    const { img_path } = found;
+
+    const filePath = img_path.split("/o/")[1].split("?")[0];
+    const decodedPath = decodeURIComponent(filePath);
+
+    const { firebaseStorage } = await firebaseConfig();
+    const fileRef = ref(firebaseStorage, decodedPath);
+
+    await deleteObject(fileRef);
+    await sertifikatModel.deleteTemplate(id);
+    res.status(200).json({
+      message: "Data template berhasil dihapus",
+      status: true,
+    });
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 module.exports = {
   getTemplateByID,
   addTemplate,
   getAllTemplate,
+  deleteTamplate,
 };
