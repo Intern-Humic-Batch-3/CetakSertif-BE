@@ -1,7 +1,7 @@
 const conn = require("../config/db_connection");
 
 const getTemplateByID = async (id) => {
-  const SQLQuery = "SELECT * FROM foto_tamplate_sertifikat WHERE id_user = ?";
+  const SQLQuery = "SELECT * FROM foto_tamplate_sertifikat WHERE id = ?";
   return conn.execute(SQLQuery, [id]);
 };
 
@@ -16,8 +16,14 @@ const getAllTemplate = () => {
   return conn.execute(SQLQuery);
 };
 
+const deleteTemplate = (id) => {
+  const SQLQuery = "DELETE FROM foto_tamplate_sertifikat WHERE id = ?";
+  return conn.execute(SQLQuery, [id]);
+};
+
 module.exports = {
   getTemplateByID,
   uploadTemplate,
   getAllTemplate,
+  deleteTemplate,
 };
