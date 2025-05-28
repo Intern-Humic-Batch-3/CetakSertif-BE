@@ -5,10 +5,10 @@ const getTemplateByID = async (id) => {
   return conn.execute(SQLQuery, [id]);
 };
 
-const uploadTemplate = async (id_user, img_path) => {
+const uploadTemplate = async (id, id_user, img_path, kategori) => {
   const SQLQuery =
-    "INSERT INTO foto_tamplate_sertifikat (id_user, img_path, created_at) VALUES (?, ?, NOW())";
-  return conn.execute(SQLQuery, [id_user, img_path]);
+    "INSERT INTO foto_tamplate_sertifikat (id, id_user, img_path, kategori, created_at) VALUES (?, ?, ?, ?,NOW())";
+  return conn.execute(SQLQuery, [id, id_user, img_path, kategori]);
 };
 
 const getAllTemplate = () => {

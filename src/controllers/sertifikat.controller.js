@@ -8,6 +8,7 @@ const {
 } = require("firebase/storage");
 const firebaseConfig = require("../config/firebase.config");
 const path = require("path");
+const { v4: uuidv4 } = require("uuid");
 
 const getTemplateByID = async (req, res) => {
   const id = req.id;
@@ -27,6 +28,8 @@ const getTemplateByID = async (req, res) => {
 
 const addTemplate = async (req, res) => {
   let templateIMG = null;
+  const { kategori } = req.body;
+  const id = await uuidv4();
 
   try {
     if (req.file) {
@@ -35,10 +38,10 @@ const addTemplate = async (req, res) => {
       return res.status(400).json({ message: "Harap upload template!" });
     }
 
-    const id = req.id;
+    const idUser = req.id;
     const templatePath = await uploadTamplateIMG(templateIMG);
 
-    await sertifikatModel.uploadTemplate(id, templatePath);
+    await sertifikatModel.uploadTemplate(id, idUser, templatePath, kategori);
     return res.json({
       message: "Berhasil mengupload template",
       fileUrl: templatePath,
@@ -150,7 +153,7 @@ const deleteTamplate = async (req, res) => {
       status: true,
     });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
