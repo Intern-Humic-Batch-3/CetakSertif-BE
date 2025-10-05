@@ -28,6 +28,6 @@ jobs:
             sudo git pull origin main
             sudo npm install
             pm2 list
-            pm2 restart 3
+            pm2 restart 12
             sudo systemctl restart apache2  # Change to nginx if using Nginx
           EOF
