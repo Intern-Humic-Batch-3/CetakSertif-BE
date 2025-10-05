@@ -4,9 +4,10 @@ const verifyJWT = require("../middleware/verifyJWT");
 const multer = require("../middleware/multer");
 const sertifikatController = require("../controllers/sertifikat.controller");
 
-router.get('/get/templateByID', verifyJWT, sertifikatController.getTemplateByID);
+// Routes untuk template
+router.get('/get/template/:id', verifyJWT,sertifikatController.getTemplateByID);
+router.get('/get/templates', verifyJWT, sertifikatController.getAllTemplate);
 router.post('/post/template', verifyJWT, multer.single('template'), sertifikatController.addTemplate);
-router.get('/get/allTemplate', sertifikatController.getAllTemplate);
-router.delete('/delete/template/:id', verifyJWT, sertifikatController.deleteTamplate);
+router.delete('/delete/template/:id', verifyJWT, sertifikatController.deleteTemplate);
 
 module.exports = router

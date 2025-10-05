@@ -1,160 +1,195 @@
 const sertifikatModel = require("../models/sertifikat");
-const {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} = require("firebase/storage");
-const firebaseConfig = require("../config/firebase.config");
 const path = require("path");
+const fs = require("fs");
 const { v4: uuidv4 } = require("uuid");
 
+// Helper function untuk memvalidasi file gambar
+const isValidImageFile = (file) => {
+  const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+  const maxFileSize = 5 * 1024 * 1024; // 5MB
+  
+  return allowedMimeTypes.includes(file.mimetype) && file.size <= maxFileSize;
+};
+
+// Helper function untuk mendapatkan path absolut file
+const getAbsolutePath = (relativePath) => {
+  return path.join(__dirname, "..", relativePath);
+};
+
 const getTemplateByID = async (req, res) => {
-  const id = req.id;
+  const { id } = req.params; // Menggunakan params, bukan dari JWT
+  
   try {
     const [data] = await sertifikatModel.getTemplateByID(id);
     if (data.length > 0) {
-      return res.json({ message: "menampilkan data tempalte", data: data });
+      return res.json({ 
+        message: "Menampilkan data template", 
+        success: true,
+        data: data[0] 
+      });
     } else {
-      return res
-        .status(404)
-        .json({ message: "anda belum mengupload template" });
+      return res.status(404).json({ 
+        message: "Template tidak ditemukan", 
+        success: false,
+        data: null 
+      });
     }
   } catch (error) {
-    res.status(500).json({ message: error.message, data: null });
+    console.error("Error saat mengambil template by ID:", error);
+    res.status(500).json({ 
+      message: "Error saat mengambil data template", 
+      success: false,
+      error: error.message 
+    });
   }
 };
 
 const addTemplate = async (req, res) => {
-  let templateIMG = null;
   const { kategori } = req.body;
-  const id = await uuidv4();
+  const id = uuidv4();
 
   try {
-    if (req.file) {
-      templateIMG = req.file;
-    } else {
-      return res.status(400).json({ message: "Harap upload template!" });
+    // Validasi input
+    if (!req.file) {
+      return res.status(400).json({ 
+        message: "Harap upload template!", 
+        success: false 
+      });
+    }
+
+    if (!kategori) {
+      return res.status(400).json({ 
+        message: "Kategori wajib diisi!", 
+        success: false 
+      });
+    }
+
+    // Validasi file
+    if (!isValidImageFile(req.file)) {
+      // Hapus file yang sudah ter-upload jika tidak valid
+      if (req.file.path && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(400).json({ 
+        message: "File harus berupa gambar (JPEG, JPG, PNG) dengan ukuran maksimal 5MB", 
+        success: false 
+      });
     }
 
     const idUser = req.id;
-    const templatePath = await uploadTamplateIMG(templateIMG);
+    // Path relatif untuk disimpan di database
+    const templatePath = `/uploads/templates/${req.file.filename}`;
 
     await sertifikatModel.uploadTemplate(id, idUser, templatePath, kategori);
-    return res.json({
+    
+    return res.status(201).json({
       message: "Berhasil mengupload template",
-      fileUrl: templatePath,
+      success: true,
+      data: {
+        id: id,
+        fileUrl: templatePath,
+        kategori: kategori,
+        filename: req.file.filename
+      }
     });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Gagal mengupload template", error });
+    // Hapus file jika terjadi error saat menyimpan ke database
+    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+      try {
+        fs.unlinkSync(req.file.path);
+        console.log("File berhasil dihapus karena error database");
+      } catch (unlinkError) {
+        console.error("Error menghapus file:", unlinkError);
+      }
+    }
+    
+    console.error("Error saat menambah template:", error);
+    return res.status(500).json({ 
+      message: "Gagal mengupload template", 
+      success: false,
+      error: error.message 
+    });
   }
 };
 
-// STATIC FILE
-// const addTemplate = async (req, res) => {
-//   try {
-//     if (!req.file) {
-//       return res.status(400).json({ message: "Harap upload template!" });
-//     }
 
-//     const id = req.id;
-//     const file = `/uploads/${req.file.filename}`;
-
-//     await sertifikatModel.uploadTemplate(id, file);
-//     return res.json({ message: "Berhasil mengupload template", fileUrl: file });
-//   } catch (error) {
-//     return res
-//       .status(500)
-//       .json({ message: "Gagal mengupload template", error });
-//   }
-// };
 
 const getAllTemplate = async (req, res) => {
   try {
     const [data] = await sertifikatModel.getAllTemplate();
     if (data.length > 0) {
       res.json({
-        massage: "menampilkan semua template",
+        message: "Menampilkan semua template",
+        success: true,
         data: data,
       });
     } else {
       res.json({
-        massage: "Tidak ada template yang tersedia",
+        message: "Tidak ada template yang tersedia",
+        success: true,
+        data: []
       });
     }
   } catch (error) {
+    console.error("Error saat mengambil template:", error);
     res.status(500).json({
-      massage: "error",
-      serverMassage: error.massage,
+      message: "Error saat mengambil data template",
+      success: false,
+      error: error.message,
     });
   }
 };
 
-const uploadTamplateIMG = async (TamplateIMG) => {
-  try {
-    if (!TamplateIMG) {
-      throw new Error("File tidak valid");
-    }
-
-    const TamplateIMGExtension = path.extname(TamplateIMG.originalname);
-    const TamplateIMGOriginalName = path.basename(
-      TamplateIMG.originalname,
-      TamplateIMGExtension
-    );
-    const newTamplateIMGName = `${Date.now()}_${TamplateIMGOriginalName}${TamplateIMGExtension}`;
-
-    const { firebaseStorage } = await firebaseConfig();
-    const storageRef = ref(
-      firebaseStorage,
-      `intern-humic/template-sertifikat/${newTamplateIMGName}`
-    );
-
-    const TamplateIMGBuffer = TamplateIMG.buffer;
-
-    const resultTamplateIMG = await uploadBytes(storageRef, TamplateIMGBuffer, {
-      contentType: TamplateIMG.mimetype,
-    });
-
-    return await getDownloadURL(resultTamplateIMG.ref);
-  } catch (error) {
-    console.error("Error saat mengunggah tamplate sertifikat:", error.message);
-    throw new Error("Gagal mengunggah tamplate sertifikat.");
-  }
-};
-
-const deleteTamplate = async (req, res) => {
+const deleteTemplate = async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Cek apakah template exists
     const [templateData] = await sertifikatModel.getTemplateByID(id);
+    console.log(templateData)
     const found = templateData[0];
 
     if (!found) {
-      return res
-        .status(404)
-        .json({ message: "Data tamplate atau gambar tidak ditemukan." });
+      return res.status(404).json({ 
+        message: "Template tidak ditemukan", 
+        success: false 
+      });
     }
 
     const { img_path } = found;
 
-    const filePath = img_path.split("/o/")[1].split("?")[0];
-    const decodedPath = decodeURIComponent(filePath);
+    // Hapus file dari sistem file lokal
+    const fullFilePath = getAbsolutePath(img_path);
+    
+    if (fs.existsSync(fullFilePath)) {
+      try {
+        fs.unlinkSync(fullFilePath);
+        console.log(`File berhasil dihapus: ${fullFilePath}`);
+      } catch (fileError) {
+        console.error("Error menghapus file:", fileError);
+        // Lanjutkan menghapus dari database meskipun file tidak bisa dihapus
+      }
+    } else {
+      console.log(`File tidak ditemukan: ${fullFilePath}`);
+    }
 
-    const { firebaseStorage } = await firebaseConfig();
-    const fileRef = ref(firebaseStorage, decodedPath);
-
-    await deleteObject(fileRef);
+    // Hapus data dari database
     await sertifikatModel.deleteTemplate(id);
+    
     res.status(200).json({
-      message: "Data template berhasil dihapus",
-      status: true,
+      message: "Template berhasil dihapus",
+      success: true,
+      data: {
+        deletedId: id
+      }
     });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Error saat menghapus template:", error);
+    res.status(500).json({ 
+      message: "Gagal menghapus template", 
+      success: false,
+      error: error.message 
+    });
   }
 };
 
@@ -162,5 +197,5 @@ module.exports = {
   getTemplateByID,
   addTemplate,
   getAllTemplate,
-  deleteTamplate,
+  deleteTemplate,
 };

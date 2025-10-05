@@ -136,8 +136,3 @@ dist
 #Database Tamplate
 .sql
 db_tamplate.sql
-
-# Upload file
-/uploads
-uploads/
-

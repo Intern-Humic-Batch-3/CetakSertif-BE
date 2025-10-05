@@ -7,6 +7,10 @@ const userRoute = require("./routes/user.routes");
 const authRoute = require("./routes/auth.routes");
 const sertifikatRoute = require("./routes/sertifikat.routes");
 const path = require("path");
+const { initializeUploadDirectories } = require("./utils/fileHelper");
+
+// Initialize upload directories on startup
+initializeUploadDirectories();
 
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
